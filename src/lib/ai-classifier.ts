@@ -41,7 +41,12 @@ export async function analyzeEmails(
 
   const hash = hashIds(messages);
   const cached = loadCache(hash);
-  if (cached) return cached;
+  if (cached) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[school-organiser] AI cache hit", cached.length, "classifications");
+    }
+    return cached;
+  }
 
   const emails = messages.map((m) => ({
     id: m.id,
@@ -64,5 +69,8 @@ export async function analyzeEmails(
   const data = await res.json();
   const results: AIClassification[] = Array.isArray(data.results) ? data.results : [];
   saveCache(hash, results);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[school-organiser] AI analysis OK", results.length, "classifications (cached for this session)");
+  }
   return results;
 }

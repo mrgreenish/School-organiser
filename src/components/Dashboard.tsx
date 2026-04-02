@@ -52,8 +52,13 @@ export default function Dashboard() {
     try {
       const results = await analyzeEmails(msgs, name, cls);
       setAiResults(results);
-    } catch {
-      // Silently fall back to keyword-based overview
+      if (process.env.NODE_ENV === "development") {
+        console.log("[school-organiser] Smart overview ready (AI)", results.length, "items");
+      }
+    } catch (e) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[school-organiser] AI unavailable, keyword overview only", e);
+      }
     } finally {
       setAiLoading(false);
     }
@@ -151,6 +156,17 @@ export default function Dashboard() {
         : buildOverview(messages, childName, childClass),
     [messages, childName, childClass, aiResults]
   );
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development" || !messages.length) return;
+    console.log("[school-organiser] Overview sections", {
+      actionItems: overview.actionItems.length,
+      comingUp: overview.comingUp.length,
+      goodToKnow: overview.goodToKnow.length,
+      aboutChild: overview.aboutChild.length,
+      mode: aiResults.length ? "ai" : "keywords",
+    });
+  }, [overview, messages.length, aiResults.length]);
 
   function handleGoogleLogin() {
     const params = new URLSearchParams({
