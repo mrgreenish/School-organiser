@@ -166,9 +166,8 @@ export function buildOverview(
       }
     }
 
-    // Coming up: future events + today/yesterday (still relevant)
-    const eventCutoff = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
-    if (isEvent && emailDate && emailDate >= eventCutoff) {
+    // Coming up: today and future events only
+    if (isEvent && emailDate && emailDate >= now) {
       comingUp.push({ ...item });
     }
 
@@ -211,6 +210,9 @@ export function buildOverviewWithAI(
   const goodToKnow: OverviewItem[] = [];
   const aboutChild: OverviewItem[] = [];
 
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
   for (const msg of messages) {
     const ai = aiMap.get(msg.id);
     if (!ai || ai.category === "ignore") continue;
@@ -225,7 +227,7 @@ export function buildOverviewWithAI(
       continue;
     }
 
-    const { formatted: date } = getMessageDate(msg);
+    const { formatted: date, parsed: emailDate } = getMessageDate(msg);
     const info = extractInfo(msg.body);
 
     const cleanSubject = msg.subject
@@ -251,7 +253,9 @@ export function buildOverviewWithAI(
         actionItems.push(item);
         break;
       case "event":
-        comingUp.push(item);
+        if (emailDate && emailDate >= now) {
+          comingUp.push(item);
+        }
         break;
       case "news":
         goodToKnow.push(item);
