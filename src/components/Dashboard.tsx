@@ -112,7 +112,7 @@ export default function Dashboard() {
           const data = await res.json();
           if (data.token) {
             token = data.token;
-            sessionStorage.setItem("gmail_access_token", token);
+            sessionStorage.setItem("gmail_access_token", data.token);
           }
         } catch {
           // ignore — fall through to silent refresh
@@ -126,8 +126,10 @@ export default function Dashboard() {
           const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
           if (refreshRes.ok) {
             const { access_token } = await refreshRes.json();
-            token = access_token;
-            sessionStorage.setItem("gmail_access_token", token);
+            if (access_token) {
+              token = access_token;
+              sessionStorage.setItem("gmail_access_token", access_token);
+            }
           }
         } catch {
           // ignore — fall through to login screen
