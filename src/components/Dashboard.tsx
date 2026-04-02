@@ -87,24 +87,29 @@ export default function Dashboard() {
     if (name) setChildName(name);
     if (cls) setChildClass(cls);
 
-    // DEV ONLY: inject token via ?dev_token= URL param to bypass OAuth
-    if (process.env.NODE_ENV === "development") {
-      const params = new URLSearchParams(window.location.search);
-      const devToken = params.get("dev_token");
-      if (devToken) {
-        sessionStorage.setItem("gmail_access_token", devToken);
-        params.delete("dev_token");
-        const newUrl =
-          window.location.pathname +
-          (params.toString() ? "?" + params.toString() : "");
-        window.history.replaceState({}, "", newUrl);
+    async function init() {
+      let token = sessionStorage.getItem("gmail_access_token");
+
+      // DEV ONLY: auto-login using dev_token from .env.local (via API route)
+      if (!token && process.env.NODE_ENV === "development") {
+        try {
+          const res = await fetch("/api/dev-token");
+          const data = await res.json();
+          if (data.token) {
+            token = data.token;
+            sessionStorage.setItem("gmail_access_token", token);
+          }
+        } catch {
+          // ignore — fall through to login screen
+        }
+      }
+
+      if (token) {
+        loadMessages(token, name, cls);
       }
     }
 
-    const token = sessionStorage.getItem("gmail_access_token");
-    if (token) {
-      loadMessages(token, name, cls);
-    }
+    init();
   }, [loadMessages]);
 
   const overview = useMemo(
