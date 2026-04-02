@@ -69,9 +69,24 @@ export default function Dashboard() {
       runAiAnalysis(msgs, name, cls);
     } catch (err) {
       if (err instanceof Error && err.message === "TOKEN_EXPIRED") {
+        // Try to silently refresh before giving up
+        try {
+          const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
+          if (refreshRes.ok) {
+            const { access_token: newToken } = await refreshRes.json();
+            sessionStorage.setItem("gmail_access_token", newToken);
+            const msgs = await fetchSocialSchoolsEmails(newToken);
+            setMessages(msgs);
+            setIsAuthenticated(true);
+            runAiAnalysis(msgs, name, cls);
+            return;
+          }
+        } catch {
+          // fall through to login screen
+        }
         sessionStorage.removeItem("gmail_access_token");
         setIsAuthenticated(false);
-        setError("Session expired. Please connect Gmail again.");
+        setError(null);
       } else {
         setError("Failed to load messages. Please try again.");
       }
@@ -100,6 +115,21 @@ export default function Dashboard() {
             sessionStorage.setItem("gmail_access_token", token);
           }
         } catch {
+          // ignore — fall through to silent refresh
+        }
+      }
+
+      // No token in sessionStorage (e.g. tab was closed and reopened) —
+      // try to silently get a new access token using the HttpOnly refresh token cookie
+      if (!token) {
+        try {
+          const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
+          if (refreshRes.ok) {
+            const { access_token } = await refreshRes.json();
+            token = access_token;
+            sessionStorage.setItem("gmail_access_token", token);
+          }
+        } catch {
           // ignore — fall through to login screen
         }
       }
@@ -124,8 +154,9 @@ export default function Dashboard() {
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
       redirect_uri: window.location.origin + "/auth/callback",
-      response_type: "token",
+      response_type: "code",
       scope: SCOPES,
+      access_type: "offline",
       prompt: "consent",
       include_granted_scopes: "true",
     });
@@ -136,6 +167,7 @@ export default function Dashboard() {
     sessionStorage.removeItem("gmail_access_token");
     setMessages([]);
     setIsAuthenticated(false);
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
   }
 
   function handleShowMessage(messageId: string) {

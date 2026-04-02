@@ -1,27 +1,60 @@
 "use client";
 
 import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function AuthCallback() {
+function AuthCallbackInner() {
+  const searchParams = useSearchParams();
+
   useEffect(() => {
-    // Extract access token from URL fragment (implicit OAuth flow)
-    // Token is in the URL hash, never sent to the server
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get("access_token");
+    const code = searchParams.get("code");
 
-    if (accessToken) {
-      // Store only in sessionStorage (cleared when tab closes)
-      sessionStorage.setItem("gmail_access_token", accessToken);
+    if (!code) {
+      window.location.href = "/";
+      return;
     }
 
-    // Redirect to dashboard
-    window.location.href = "/";
-  }, []);
+    async function exchangeCode() {
+      const res = await fetch("/api/auth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          redirectUri: window.location.origin + "/auth/callback",
+        }),
+      });
+
+      if (res.ok) {
+        const { access_token } = await res.json();
+        if (access_token) {
+          sessionStorage.setItem("gmail_access_token", access_token);
+        }
+      }
+
+      window.location.href = "/";
+    }
+
+    exchangeCode();
+  }, [searchParams]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
       <p className="text-gray-500">Connecting your account...</p>
     </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-gray-500">Connecting your account...</p>
+        </div>
+      }
+    >
+      <AuthCallbackInner />
+    </Suspense>
   );
 }
