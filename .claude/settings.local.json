@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(kill 5294)",
+      "Bash(npm --version)",
+      "Read(//Users/filipvanharreveld/.nvm/versions/node/**)",
+      "Read(//opt/homebrew/Cellar/node/25.4.0/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(source ~/.nvm/nvm.sh)",
+      "Bash(nvm current:*)",
+      "Bash(npx next:*)",
+      "Bash(xargs kill:*)"
+    ]
+  }
+}

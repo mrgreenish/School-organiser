@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "school-organiser-dev",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export PATH=/Users/filipvanharreveld/.nvm/versions/node/v22.14.0/bin:$PATH && node_modules/.bin/next dev --webpack"],
+      "port": 3000,
+      "autoPort": false
+    }
+  ]
+}
